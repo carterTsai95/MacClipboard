@@ -49,9 +49,19 @@ struct MacClipboardApp: App {
         
         MenuBarExtra("Clipboard", systemImage: "clipboard") {
             if let latestItem = clipboardManager.clipboardItems.first {
-                Text(latestItem.content)
-                    .lineLimit(2)
-                    .font(.system(size: 12))
+                switch latestItem.content {
+                case .text(let string):
+                    Text(string)
+                        .lineLimit(2)
+                        .font(.system(size: 12))
+                case .image(let data):
+                    if let nsImage = NSImage(data: data) {
+                        Image(nsImage: nsImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 40)
+                    }
+                }
                 
                 Button("Copy Current") {
                     clipboardManager.copyToClipboard(latestItem)
@@ -62,10 +72,18 @@ struct MacClipboardApp: App {
             }
             
             ForEach(clipboardManager.clipboardItems.dropFirst().prefix(5)) { item in
-                Button(item.content) {
+                Button(action: {
                     clipboardManager.copyToClipboard(item)
+                }) {
+                    switch item.content {
+                    case .text(let string):
+                        Text(string)
+                            .lineLimit(1)
+                    case .image:
+                        Text("Image")
+                            .lineLimit(1)
+                    }
                 }
-                .lineLimit(1)
             }
             
             if clipboardManager.clipboardItems.count > 1 {

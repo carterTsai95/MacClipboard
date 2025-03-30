@@ -77,12 +77,31 @@ struct ClipboardItemRow: View {
     let item: ClipboardItem
     @ObservedObject var clipboardManager: ClipboardManager
     let isLatest: Bool
+    @State private var showingPreview = false
     
     var body: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text(item.content)
-                    .lineLimit(2)
+                switch item.content {
+                case .text(let string):
+                    Text(string)
+                        .lineLimit(2)
+                case .image(let data):
+                    if let nsImage = NSImage(data: data) {
+                        Image(nsImage: nsImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 40)
+                            .onTapGesture {
+                                showingPreview.toggle()
+                            }
+                            .popover(isPresented: $showingPreview, arrowEdge: .leading) {
+                                ImagePreviewView(imageData: data)
+                                    .frame(width: 600, height: 400)
+                            }
+                    }
+                }
+                
                 Text(item.timestamp, style: .time)
                     .font(.caption)
                     .foregroundColor(.secondary)
