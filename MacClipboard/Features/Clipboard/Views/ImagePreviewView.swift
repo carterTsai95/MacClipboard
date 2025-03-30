@@ -1,5 +1,4 @@
 import SwiftUI
-import AppKit
 
 struct ImagePreviewView: View {
     let imageData: Data
@@ -8,7 +7,7 @@ struct ImagePreviewView: View {
         if let nsImage = NSImage(data: imageData) {
             Image(nsImage: nsImage)
                 .resizable()
-                .aspectRatio(contentMode: .fit)
+                .scaledToFit()
                 .padding()
         }
     }
