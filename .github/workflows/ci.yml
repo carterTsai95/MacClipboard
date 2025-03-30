@@ -25,6 +25,128 @@ jobs:
     - name: Set up Xcode
       run: sudo xcode-select -s /Applications/Xcode.app
       
+    - name: Organize Project Structure
+      run: |
+        # Create SPM structure
+        mkdir -p Sources/MacClipboard Tests/MacClipboardTests
+        
+        # Move source files to Sources directory
+        mv MacClipboard/*.swift Sources/MacClipboard/
+        mv MacClipboard/Assets.xcassets Sources/MacClipboard/
+        mv MacClipboard/Preview\ Content Sources/MacClipboard/
+        mv MacClipboard/*.entitlements Sources/MacClipboard/
+        
+        # Move test files to Tests directory
+        mv MacClipboardTests/*.swift Tests/MacClipboardTests/
+        
+        # Create Package.swift
+        cat > Package.swift << 'EOF'
+        // swift-tools-version: 5.9
+        import PackageDescription
+
+        let package = Package(
+            name: "MacClipboard",
+            platforms: [
+                .macOS(.v13)
+            ],
+            products: [
+                .executable(
+                    name: "MacClipboard",
+                    targets: ["MacClipboard"]
+                )
+            ],
+            dependencies: [],
+            targets: [
+                .executableTarget(
+                    name: "MacClipboard",
+                    path: "Sources/MacClipboard",
+                    resources: [
+                        .process("Assets.xcassets"),
+                        .process("Preview Content")
+                    ]
+                ),
+                .testTarget(
+                    name: "MacClipboardTests",
+                    dependencies: ["MacClipboard"],
+                    path: "Tests/MacClipboardTests"
+                )
+            ]
+        )
+        EOF
+        
+        # Generate Xcode project
+        swift package generate-xcodeproj
+        
+        # Share the scheme
+        mkdir -p MacClipboard.xcodeproj/xcshareddata/xcschemes
+        cat > MacClipboard.xcodeproj/xcshareddata/xcschemes/MacClipboard.xcscheme << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Scheme
+           LastUpgradeVersion = "1500"
+           version = "1.7">
+           <BuildAction
+              parallelizeBuildables = "YES"
+              buildImplicitDependencies = "YES">
+              <BuildActionEntries>
+                 <BuildActionEntry
+                    buildForTesting = "YES"
+                    buildForRunning = "YES"
+                    buildForProfiling = "YES"
+                    buildForArchiving = "YES"
+                    buildForAnalyzing = "YES">
+                    <BuildableReference
+                       BuildableIdentifier = "primary"
+                       BlueprintIdentifier = "MacClipboard::MacClipboard"
+                       BuildableName = "MacClipboard"
+                       BlueprintName = "MacClipboard"
+                       ReferencedContainer = "container:MacClipboard.xcodeproj">
+                    </BuildableReference>
+                 </BuildActionEntry>
+              </BuildActionEntries>
+           </BuildAction>
+           <TestAction
+              buildConfiguration = "Debug"
+              selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+              selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+              shouldUseLaunchSchemeArgsEnv = "YES"
+              shouldAutocreateTestPlan = "YES">
+              <Testables>
+                 <TestableReference
+                    skipped = "NO">
+                    <BuildableReference
+                       BuildableIdentifier = "primary"
+                       BlueprintIdentifier = "MacClipboard::MacClipboardTests"
+                       BuildableName = "MacClipboardTests.xctest"
+                       BlueprintName = "MacClipboardTests"
+                       ReferencedContainer = "container:MacClipboard.xcodeproj">
+                    </BuildableReference>
+                 </TestableReference>
+              </Testables>
+           </TestAction>
+           <LaunchAction
+              buildConfiguration = "Debug"
+              selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+              selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+              launchStyle = "0"
+              useCustomWorkingDirectory = "NO"
+              ignoresPersistentStateOnLaunch = "NO"
+              debugDocumentVersioning = "YES"
+              debugServiceExtension = "internal"
+              allowLocationSimulation = "YES">
+              <BuildableProductRunnable
+                 runnableDebuggingMode = "0">
+                 <BuildableReference
+                    BuildableIdentifier = "primary"
+                    BlueprintIdentifier = "MacClipboard::MacClipboard"
+                    BuildableName = "MacClipboard"
+                    BlueprintName = "MacClipboard"
+                    ReferencedContainer = "container:MacClipboard.xcodeproj">
+                 </BuildableReference>
+              </BuildableProductRunnable>
+           </LaunchAction>
+        </Scheme>
+        EOF
+      
     - name: Build and Test
       run: |
         xcodebuild test \
