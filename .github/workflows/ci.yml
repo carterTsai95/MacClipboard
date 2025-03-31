@@ -30,5 +30,22 @@ jobs:
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            | xcpretty -s
+            -resultBundlePath TestResults \
+            -resultBundleVersion 3 \
+            | xcpretty -s --report junit
+          
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: TestResults
+          retention-days: 30
+          
+      - name: Check Test Results
+        if: always()
+        run: |
+          if [ -f "TestResults/MacClipboardTests.xctest/TestSummaries.plist" ]; then
+            plutil -convert json -o - TestResults/MacClipboardTests.xctest/TestSummaries.plist | jq -r '.TestableSummaries[0].Tests[0].Subtests[0].Subtests[] | select(.TestStatus == "Failure") | "Failed Test: \(.TestName)\nError: \(.TestResultMessages[0].Message)"'
+          fi
           
