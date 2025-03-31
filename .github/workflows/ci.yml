@@ -5,7 +5,7 @@ on: [push]
 jobs:
   deploy:
     name: GitHub Pipeline
-    runs-on: macos-15-arm64
+    runs-on: macos-15
     
     steps:
       - name: Checkout
