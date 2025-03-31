@@ -2,6 +2,11 @@ name: tests
 
 on: [push]
 
+permissions:
+  contents: read
+  checks: write
+  artifacts: write
+
 jobs:
   deploy:
     name: GitHub Pipeline
@@ -36,11 +41,12 @@ jobs:
           
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: TestResults
           retention-days: 30
+          if-no-files-found: error
           
       - name: Check Test Results
         if: always()
