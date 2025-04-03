@@ -1,6 +1,10 @@
 name: tests
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -37,7 +41,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -resultBundlePath TestResults \
             -resultBundleVersion 3 \
-            | xcpretty -s --report junit
+            | xcpretty -s --report junit || exit 1
           
       - name: Upload Test Results
         if: always()
@@ -53,5 +57,8 @@ jobs:
         run: |
           if [ -f "TestResults/MacClipboardTests.xctest/TestSummaries.plist" ]; then
             plutil -convert json -o - TestResults/MacClipboardTests.xctest/TestSummaries.plist | jq -r '.TestableSummaries[0].Tests[0].Subtests[0].Subtests[] | select(.TestStatus == "Failure") | "Failed Test: \(.TestName)\nError: \(.TestResultMessages[0].Message)"'
+            if [ $? -eq 0 ]; then
+              exit 1
+            fi
           fi
           
