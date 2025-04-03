@@ -116,19 +116,24 @@ final class ClipboardManagerTests: XCTestCase {
         mockPasteboard.clearContents()
         mockPasteboard.setString(testText, forType: .string)
         
-        let expectation = XCTestExpectation(description: "Wait for item to be added")
+        let expectation = XCTestExpectation(description: "Wait for item to be added and deleted")
         
         // When
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             guard let item = self.clipboardManager.clipboardItems.first else {
                 XCTFail("No item was added")
+                expectation.fulfill()
                 return
             }
             
             // Then
             self.clipboardManager.deleteItem(item)
-            XCTAssertTrue(self.clipboardManager.clipboardItems.isEmpty)
-            expectation.fulfill()
+            
+            // Wait for the delete operation to complete
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                XCTAssertTrue(self.clipboardManager.clipboardItems.isEmpty)
+                expectation.fulfill()
+            }
         }
         
         wait(for: [expectation], timeout: 1.0)
@@ -136,15 +141,19 @@ final class ClipboardManagerTests: XCTestCase {
     
     func testClearHistory() {
         // Given
-        let expectation = XCTestExpectation(description: "Wait for items to be added")
+        let expectation = XCTestExpectation(description: "Wait for items to be added and cleared")
         
         func addItems(index: Int) {
             guard index < 3 else {
                 // All items added, now test clearing
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     self.clipboardManager.clearHistory()
-                    XCTAssertEqual(self.clipboardManager.clipboardItems.count, 1)
-                    expectation.fulfill()
+                    
+                    // Wait for the clear operation to complete
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        XCTAssertEqual(self.clipboardManager.clipboardItems.count, 1)
+                        expectation.fulfill()
+                    }
                 }
                 return
             }
