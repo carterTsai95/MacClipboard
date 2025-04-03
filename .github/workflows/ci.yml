@@ -31,33 +31,13 @@ jobs:
           
       - name: Build Test
         run: |
-          xcodebuild test \
+          set -o pipefail && xcodebuild test \
             -project MacClipboard.xcodeproj \
             -scheme MacClipboard \
             -destination 'platform=macOS' \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            -resultBundlePath TestResults \
-            -resultBundleVersion 3 \
-            | xcpretty -s --report junit || exit 1
-          
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: TestResults
-          retention-days: 30
-          if-no-files-found: error
-          
-      - name: Check Test Results
-        if: always()
-        run: |
-          if [ -f "TestResults/MacClipboardTests.xctest/TestSummaries.plist" ]; then
-            plutil -convert json -o - TestResults/MacClipboardTests.xctest/TestSummaries.plist | jq -r '.TestableSummaries[0].Tests[0].Subtests[0].Subtests[] | select(.TestStatus == "Failure") | "Failed Test: \(.TestName)\nError: \(.TestResultMessages[0].Message)"'
-            if [ $? -eq 0 ]; then
-              exit 1
-            fi
-          fi
+            | xcpretty -s
+        
           
