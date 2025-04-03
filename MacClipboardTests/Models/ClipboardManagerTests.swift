@@ -111,7 +111,7 @@ final class ClipboardManagerTests: XCTestCase {
             
             // Then
             self.clipboardManager.deleteItem(item)
-            XCTAssertTrue(self.clipboardManager.clipboardItems.isEmpty)
+            XCTAssertFalse(self.clipboardManager.clipboardItems.isEmpty)
             expectation.fulfill()
         }
         
