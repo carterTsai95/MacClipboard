@@ -9,7 +9,6 @@ on:
 permissions:
   contents: read
   checks: write
-  artifacts: write
 
 jobs:
   deploy:
