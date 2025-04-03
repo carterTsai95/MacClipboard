@@ -2,20 +2,24 @@ import XCTest
 @testable import MacClipboard
 
 final class ClipboardServiceTests: XCTestCase {
-    var clipboardService: ClipboardService!
-    let pasteboard = NSPasteboard.general
+    // MARK: - Properties
+    private var clipboardService: ClipboardService!
+    private var mockPasteboard: MockPasteboard!
     
+    // MARK: - Lifecycle
     override func setUp() {
         super.setUp()
-        clipboardService = ClipboardService.shared
-        pasteboard.clearContents()
+        mockPasteboard = MockPasteboard()
+        clipboardService = ClipboardService(pasteboard: mockPasteboard)
     }
     
     override func tearDown() {
-        pasteboard.clearContents()
+        mockPasteboard = nil
+        clipboardService = nil
         super.tearDown()
     }
     
+    // MARK: - Test Cases
     func testCopyAndGetTextContent() {
         // Given
         let testText = "Test clipboard text"
@@ -26,11 +30,13 @@ final class ClipboardServiceTests: XCTestCase {
         let retrievedContent = clipboardService.getCurrentContent()
         
         // Then
-        if case .text(let retrievedText) = retrievedContent {
-            XCTAssertEqual(retrievedText, testText)
-        } else {
-            XCTFail("Retrieved content is not text or is nil")
+        XCTAssertNotNil(retrievedContent, "Retrieved content should not be nil")
+        guard case .text(let retrievedText) = retrievedContent else {
+            XCTFail("Retrieved content should be text")
+            return
         }
+        XCTAssertEqual(retrievedText, testText)
+        XCTAssertEqual(mockPasteboard.string(forType: .string), testText)
     }
     
     func testCopyAndGetImageContent() {
@@ -44,21 +50,23 @@ final class ClipboardServiceTests: XCTestCase {
         let retrievedContent = clipboardService.getCurrentContent()
         
         // Then
-        if case .image(let retrievedData) = retrievedContent {
-            XCTAssertEqual(retrievedData, testImageData)
-        } else {
-            XCTFail("Retrieved content is not image or is nil")
+        XCTAssertNotNil(retrievedContent, "Retrieved content should not be nil")
+        guard case .image(let retrievedData) = retrievedContent else {
+            XCTFail("Retrieved content should be image")
+            return
         }
+        XCTAssertEqual(retrievedData, testImageData)
+        XCTAssertEqual(mockPasteboard.data(forType: .tiff), testImageData)
     }
     
     func testGetContentFromEmptyClipboard() {
         // Given
-        pasteboard.clearContents()
+        mockPasteboard.clearContents()
         
         // When
         let content = clipboardService.getCurrentContent()
         
         // Then
-        XCTAssertNil(content)
+        XCTAssertNil(content, "Content should be nil for empty clipboard")
     }
 } 

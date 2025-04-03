@@ -4,26 +4,39 @@ class ClipboardManager: ObservableObject {
     @Published private(set) var clipboardItems: [ClipboardItem] = []
     private var changeCount: Int
     private let maxItems: Int
+    private let pasteboard: PasteboardProtocol
+    private let clipboardService: ClipboardService
+    private var monitoringTimer: Timer?
+    private let monitoringInterval: TimeInterval
     
-    init(maxItems: Int = 50) {
+    init(maxItems: Int = 50, 
+         pasteboard: PasteboardProtocol = SystemPasteboard(),
+         monitoringInterval: TimeInterval = 0.5) {
         self.maxItems = maxItems
-        self.changeCount = NSPasteboard.general.changeCount
+        self.pasteboard = pasteboard
+        self.changeCount = pasteboard.changeCount
+        self.clipboardService = ClipboardService(pasteboard: pasteboard)
+        self.monitoringInterval = monitoringInterval
         startMonitoring()
     }
     
     private func startMonitoring() {
-        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+        monitoringTimer?.invalidate()
+        monitoringTimer = Timer.scheduledTimer(withTimeInterval: monitoringInterval, repeats: true) { [weak self] _ in
             self?.checkForChanges()
         }
     }
     
+    func forceCheckForChanges() {
+        checkForChanges()
+    }
+    
     private func checkForChanges() {
-        let pasteboard = NSPasteboard.general
         guard pasteboard.changeCount != changeCount else { return }
         
         changeCount = pasteboard.changeCount
         
-        if let content = ClipboardService.shared.getCurrentContent() {
+        if let content = clipboardService.getCurrentContent() {
             addItem(content: content)
         }
     }
@@ -53,7 +66,7 @@ class ClipboardManager: ObservableObject {
     }
     
     func copyToClipboard(_ item: ClipboardItem) {
-        ClipboardService.shared.copyToClipboard(item.content)
+        clipboardService.copyToClipboard(item.content)
         
         // Move the item to the top of the list
         if let index = clipboardItems.firstIndex(where: { $0.id == item.id }) {
@@ -73,5 +86,9 @@ class ClipboardManager: ObservableObject {
         if clipboardItems.count > 1 {
             clipboardItems.removeSubrange(1..<clipboardItems.count)
         }
+    }
+    
+    deinit {
+        monitoringTimer?.invalidate()
     }
 } 

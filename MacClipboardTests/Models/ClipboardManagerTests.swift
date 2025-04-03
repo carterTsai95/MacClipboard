@@ -2,62 +2,75 @@ import XCTest
 @testable import MacClipboard
 
 final class ClipboardManagerTests: XCTestCase {
-    var clipboardManager: ClipboardManager!
-    let pasteboard = NSPasteboard.general
+    // MARK: - Properties
+    private var clipboardManager: ClipboardManager!
+    private var mockPasteboard: MockPasteboard!
     
+    // MARK: - Lifecycle
     override func setUp() {
         super.setUp()
-        clipboardManager = ClipboardManager(maxItems: 5)
-        pasteboard.clearContents()
+        mockPasteboard = MockPasteboard()
+        clipboardManager = ClipboardManager(maxItems: 5, 
+                                         pasteboard: mockPasteboard,
+                                         monitoringInterval: 0.1) // Faster monitoring for tests
     }
     
     override func tearDown() {
-        pasteboard.clearContents()
+        mockPasteboard = nil
+        clipboardManager = nil
         super.tearDown()
     }
     
+    // MARK: - Test Cases
     func testAddNewItem() {
         // Given
         let testText = "Test text"
-        pasteboard.clearContents()
-        pasteboard.setString(testText, forType: .string)
+        mockPasteboard.clearContents()
+        mockPasteboard.setString(testText, forType: .string)
         
         // When
         let expectation = XCTestExpectation(description: "Wait for clipboard monitoring")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            // Then
+        
+        // Then
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             XCTAssertEqual(self.clipboardManager.clipboardItems.count, 1)
-            if case .text(let text) = self.clipboardManager.clipboardItems.first?.content {
-                XCTAssertEqual(text, testText)
-            } else {
-                XCTFail("First item is not text or doesn't exist")
+            guard let firstItem = self.clipboardManager.clipboardItems.first else {
+                XCTFail("First item should exist")
+                return
             }
+            
+            guard case .text(let text) = firstItem.content else {
+                XCTFail("First item should be text")
+                return
+            }
+            
+            XCTAssertEqual(text, testText)
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 2.0)
+        wait(for: [expectation], timeout: 1.0)
     }
     
     func testMaxItemsLimit() {
         // Given
         let maxItems = 5
-        clipboardManager = ClipboardManager(maxItems: maxItems)
+        clipboardManager = ClipboardManager(maxItems: maxItems, 
+                                         pasteboard: mockPasteboard,
+                                         monitoringInterval: 0.1)
         let expectation = XCTestExpectation(description: "Wait for all items")
         
         // When
         func addItem(index: Int) {
             guard index < 10 else {
                 // All items added, now check the result
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     XCTAssertEqual(self.clipboardManager.clipboardItems.count, maxItems)
                     
                     // Verify the last 5 items are present (items 5-9)
                     let expectedTexts = (5...9).map { "Test text \($0)" }.reversed()
                     let actualTexts = self.clipboardManager.clipboardItems.compactMap { item -> String? in
-                        if case .text(let text) = item.content {
-                            return text
-                        }
-                        return nil
+                        guard case .text(let text) = item.content else { return nil }
+                        return text
                     }
                     
                     XCTAssertEqual(actualTexts, Array(expectedTexts))
@@ -67,11 +80,14 @@ final class ClipboardManagerTests: XCTestCase {
             }
             
             let testText = "Test text \(index)"
-            self.pasteboard.clearContents()
-            self.pasteboard.setString(testText, forType: .string)
+            self.mockPasteboard.clearContents()
+            self.mockPasteboard.setString(testText, forType: .string)
+            
+            // Force check for changes immediately
+            self.clipboardManager.forceCheckForChanges()
             
             // Add next item after a delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 addItem(index: index + 1)
             }
         }
@@ -79,7 +95,7 @@ final class ClipboardManagerTests: XCTestCase {
         // Start adding items
         addItem(index: 0)
         
-        wait(for: [expectation], timeout: 15.0)
+        wait(for: [expectation], timeout: 5.0)
     }
     
     func testCopyToClipboard() {
@@ -91,19 +107,19 @@ final class ClipboardManagerTests: XCTestCase {
         clipboardManager.copyToClipboard(item)
         
         // Then
-        XCTAssertEqual(pasteboard.string(forType: .string), testText)
+        XCTAssertEqual(mockPasteboard.string(forType: .string), testText)
     }
     
     func testDeleteItem() {
         // Given
         let testText = "Test text"
-        pasteboard.clearContents()
-        pasteboard.setString(testText, forType: .string)
+        mockPasteboard.clearContents()
+        mockPasteboard.setString(testText, forType: .string)
         
         let expectation = XCTestExpectation(description: "Wait for item to be added")
         
         // When
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             guard let item = self.clipboardManager.clipboardItems.first else {
                 XCTFail("No item was added")
                 return
@@ -115,7 +131,7 @@ final class ClipboardManagerTests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 2.0)
+        wait(for: [expectation], timeout: 1.0)
     }
     
     func testClearHistory() {
@@ -125,7 +141,7 @@ final class ClipboardManagerTests: XCTestCase {
         func addItems(index: Int) {
             guard index < 3 else {
                 // All items added, now test clearing
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     self.clipboardManager.clearHistory()
                     XCTAssertEqual(self.clipboardManager.clipboardItems.count, 1)
                     expectation.fulfill()
@@ -134,10 +150,13 @@ final class ClipboardManagerTests: XCTestCase {
             }
             
             let testText = "Test text \(index)"
-            self.pasteboard.clearContents()
-            self.pasteboard.setString(testText, forType: .string)
+            self.mockPasteboard.clearContents()
+            self.mockPasteboard.setString(testText, forType: .string)
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+            // Force check for changes immediately
+            self.clipboardManager.forceCheckForChanges()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 addItems(index: index + 1)
             }
         }
@@ -145,6 +164,6 @@ final class ClipboardManagerTests: XCTestCase {
         // Start adding items
         addItems(index: 0)
         
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: 3.0)
     }
 } 
