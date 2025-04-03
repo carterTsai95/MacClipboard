@@ -8,6 +8,7 @@ class ClipboardManager: ObservableObject {
     private let clipboardService: ClipboardService
     private var monitoringTimer: Timer?
     private let monitoringInterval: TimeInterval
+    private let updateQueue = DispatchQueue(label: "com.macclipboard.update", qos: .userInitiated)
     
     init(maxItems: Int = 50, 
          pasteboard: PasteboardProtocol = SystemPasteboard(),
@@ -42,26 +43,35 @@ class ClipboardManager: ObservableObject {
     }
     
     private func addItem(content: ClipboardContent) {
-        DispatchQueue.main.async {
-            // Don't add if it's the same as the most recent item
-            if let lastItem = self.clipboardItems.first {
-                switch (lastItem.content, content) {
-                case (.text(let oldText), .text(let newText)) where oldText == newText:
-                    return
-                case (.image(let oldData), .image(let newData)) where oldData == newData:
-                    return
-                default:
-                    break
-                }
+        // Don't add if it's the same as the most recent item
+        if let lastItem = clipboardItems.first {
+            switch (lastItem.content, content) {
+            case (.text(let oldText), .text(let newText)) where oldText == newText:
+                return
+            case (.image(let oldData), .image(let newData)) where oldData == newData:
+                return
+            default:
+                break
             }
-            
-            let newItem = ClipboardItem(content: content)
-            self.clipboardItems.insert(newItem, at: 0)
-            
-            // Remove oldest items if we exceed maxItems
-            if self.clipboardItems.count > self.maxItems {
-                self.clipboardItems.removeLast(self.clipboardItems.count - self.maxItems)
-            }
+        }
+        
+        let newItem = ClipboardItem(content: content)
+        updateQueue.async { [weak self] in
+            self?.updateItems(with: newItem)
+        }
+    }
+    
+    private func updateItems(with newItem: ClipboardItem) {
+        var newItems = clipboardItems
+        newItems.insert(newItem, at: 0)
+        
+        // Remove oldest items if we exceed maxItems
+        if newItems.count > maxItems {
+            newItems.removeLast(newItems.count - maxItems)
+        }
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.clipboardItems = newItems
         }
     }
     
@@ -70,21 +80,54 @@ class ClipboardManager: ObservableObject {
         
         // Move the item to the top of the list
         if let index = clipboardItems.firstIndex(where: { $0.id == item.id }) {
-            let item = clipboardItems.remove(at: index)
-            clipboardItems.insert(item, at: 0)
+            updateQueue.async { [weak self] in
+                self?.moveItemToTop(at: index)
+            }
+        }
+    }
+    
+    private func moveItemToTop(at index: Int) {
+        var newItems = clipboardItems
+        let item = newItems.remove(at: index)
+        newItems.insert(item, at: 0)
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.clipboardItems = newItems
         }
     }
     
     func deleteItem(_ item: ClipboardItem) {
         if let index = clipboardItems.firstIndex(where: { $0.id == item.id }) {
-            clipboardItems.remove(at: index)
+            updateQueue.async { [weak self] in
+                self?.removeItem(at: index)
+            }
+        }
+    }
+    
+    private func removeItem(at index: Int) {
+        var newItems = clipboardItems
+        newItems.remove(at: index)
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.clipboardItems = newItems
         }
     }
     
     func clearHistory() {
         // Keep only the most recent item
         if clipboardItems.count > 1 {
-            clipboardItems.removeSubrange(1..<clipboardItems.count)
+            updateQueue.async { [weak self] in
+                self?.removeAllExceptFirst()
+            }
+        }
+    }
+    
+    private func removeAllExceptFirst() {
+        var newItems = clipboardItems
+        newItems.removeSubrange(1..<newItems.count)
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.clipboardItems = newItems
         }
     }
     
