@@ -11,11 +11,30 @@ struct ContentView: View {
     @EnvironmentObject private var clipboardManager: ClipboardManager
     @State private var selectedItemId: UUID?
     @State private var showCopyToast = false
+    @FocusState private var isSearchFocused: Bool
+    @State private var searchText = ""
+    
+    var filteredItems: [ClipboardItem] {
+        if searchText.isEmpty {
+            return clipboardManager.clipboardItems
+        }
+        return clipboardManager.clipboardItems.filter { item in
+            switch item.content {
+            case .text(let string):
+                return string.localizedCaseInsensitiveContains(searchText)
+            case .image:
+                return false // Images are not searchable
+            }
+        }
+    }
     
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack {
-                ClipboardListView(selectedItemId: $selectedItemId, onCopy: showCopyFeedback)
+                ClipboardListView(selectedItemId: $selectedItemId, 
+                                isSearchFocused: $isSearchFocused,
+                                searchText: $searchText,
+                                onCopy: showCopyFeedback)
                     .frame(minWidth: 400, minHeight: 400)
                     .navigationTitle("Clipboard History")
                     .toolbar {
@@ -60,10 +79,16 @@ struct ContentView: View {
             copySelectedItem()
             return .handled
         }
+        .onChange(of: searchText) { _ in
+            // When search text changes, update selection to first filtered item if current selection is not in filtered results
+            if let currentId = selectedItemId, !filteredItems.contains(where: { $0.id == currentId }) {
+                selectedItemId = filteredItems.first?.id
+            }
+        }
     }
     
     private func moveSelection(up: Bool) {
-        let items = clipboardManager.clipboardItems
+        let items = filteredItems
         guard !items.isEmpty else { return }
         
         if let currentIndex = items.firstIndex(where: { $0.id == selectedItemId }) {
