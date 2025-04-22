@@ -144,6 +144,32 @@ class ClipboardManager: ObservableObject {
         }
     }
     
+    func toggleFavorite(_ item: ClipboardItem, completion: (() -> Void)? = nil) {
+        if let index = clipboardItems.firstIndex(where: { $0.id == item.id }) {
+            updateQueue.async { [weak self] in
+                self?.toggleFavoriteStatus(at: index, completion: completion)
+            }
+        } else {
+            completion?()
+        }
+    }
+    
+    private func toggleFavoriteStatus(at index: Int, completion: (() -> Void)? = nil) {
+        var newItems = clipboardItems
+        var item = newItems[index]
+        item.isFavorite.toggle()
+        newItems[index] = item
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.clipboardItems = newItems
+            completion?()
+        }
+    }
+    
+    var favoriteItems: [ClipboardItem] {
+        clipboardItems.filter { $0.isFavorite }
+    }
+    
     deinit {
         monitoringTimer?.invalidate()
     }

@@ -10,6 +10,8 @@ struct ClipboardItemRow: View {
     @State private var showingPreview = false
     @State private var isCopyHovered = false
     @State private var isDeleteHovered = false
+    @State private var isFavoriteHovered = false
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         HStack {
@@ -20,6 +22,7 @@ struct ClipboardItemRow: View {
                     case .text(let string):
                         Text(string)
                             .lineLimit(2)
+                            .foregroundColor(colorScheme == .dark ? .white : .primary)
                     case .image(let data):
                         if let nsImage = NSImage(data: data) {
                             Image(nsImage: nsImage)
@@ -44,11 +47,25 @@ struct ClipboardItemRow: View {
                 Spacer()
             }
             .padding(.vertical, 4)
-            .background(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+            .background(isSelected ? Color.accentColor.opacity(colorScheme == .dark ? 0.3 : 0.2) : Color.clear)
             .cornerRadius(6)
             
             // Action buttons outside the selection highlight
             HStack(spacing: 12) {
+                Button(action: {
+                    clipboardManager.toggleFavorite(item)
+                }) {
+                    Image(systemName: item.isFavorite ? "star.fill" : "star")
+                        .foregroundColor(isFavoriteHovered ? .yellow : (item.isFavorite ? .yellow : .secondary))
+                        .padding(4)
+                        .background(isFavoriteHovered ? Color.yellow.opacity(0.2) : Color.clear)
+                        .cornerRadius(4)
+                }
+                .buttonStyle(.plain)
+                .onHover { hovering in
+                    isFavoriteHovered = hovering
+                }
+                
                 Button(action: {
                     clipboardManager.copyToClipboard(item)
                     onCopy()
