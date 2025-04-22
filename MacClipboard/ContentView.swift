@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var showCopyToast = false
     @FocusState private var isSearchFocused: Bool
     @State private var searchText = ""
+    @State private var selectedTab: Tab = .all
     
     var filteredItems: [ClipboardItem] {
         if searchText.isEmpty {
@@ -34,9 +35,13 @@ struct ContentView: View {
                 ClipboardListView(selectedItemId: $selectedItemId, 
                                 isSearchFocused: $isSearchFocused,
                                 searchText: $searchText,
+                                selectedTab: $selectedTab,
                                 onCopy: showCopyFeedback)
                     .frame(minWidth: 400, minHeight: 400)
                     .navigationTitle("Clipboard History")
+                    .onChange(of: selectedTab) { newTab in
+                        updateSelectionForTab(newTab)
+                    }
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {
                             Button(action: {
@@ -88,16 +93,38 @@ struct ContentView: View {
     }
     
     private func moveSelection(up: Bool) {
-        let items = filteredItems
+        let items = clipboardManager.clipboardItems
         guard !items.isEmpty else { return }
         
-        if let currentIndex = items.firstIndex(where: { $0.id == selectedItemId }) {
+        // Filter items based on the current tab
+        let navigableItems = selectedTab == .all ? items : items.filter { $0.isFavorite }
+        guard !navigableItems.isEmpty else { return }
+        
+        if let currentIndex = navigableItems.firstIndex(where: { $0.id == selectedItemId }) {
             let newIndex = up ? 
-                (currentIndex - 1 + items.count) % items.count : 
-                (currentIndex + 1) % items.count
-            selectedItemId = items[newIndex].id
+                (currentIndex - 1 + navigableItems.count) % navigableItems.count : 
+                (currentIndex + 1) % navigableItems.count
+            selectedItemId = navigableItems[newIndex].id
         } else {
-            selectedItemId = items[0].id
+            selectedItemId = navigableItems[0].id
+        }
+    }
+    
+    private func updateSelectionForTab(_ tab: Tab) {
+        // If we're switching to favorites tab and no favorite item is selected
+        if tab == .favorites {
+            let favoriteItems = clipboardManager.favoriteItems
+            
+            // If no favorite items, do nothing
+            guard !favoriteItems.isEmpty else { return }
+            
+            // If current selection is not in favorites, select the first favorite
+            if let currentId = selectedItemId, !favoriteItems.contains(where: { $0.id == currentId }) {
+                selectedItemId = favoriteItems.first?.id
+            } else if selectedItemId == nil {
+                // If nothing is selected, select the first favorite
+                selectedItemId = favoriteItems.first?.id
+            }
         }
     }
     
