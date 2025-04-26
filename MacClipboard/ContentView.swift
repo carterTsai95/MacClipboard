@@ -111,20 +111,40 @@ struct ContentView: View {
     }
     
     private func updateSelectionForTab(_ tab: Tab) {
-        // If we're switching to favorites tab and no favorite item is selected
-        if tab == .favorites {
-            let favoriteItems = clipboardManager.favoriteItems
-            
-            // If no favorite items, do nothing
-            guard !favoriteItems.isEmpty else { return }
-            
-            // If current selection is not in favorites, select the first favorite
-            if let currentId = selectedItemId, !favoriteItems.contains(where: { $0.id == currentId }) {
-                selectedItemId = favoriteItems.first?.id
-            } else if selectedItemId == nil {
-                // If nothing is selected, select the first favorite
-                selectedItemId = favoriteItems.first?.id
-            }
+        print("🔄 ContentView - Updating selection for tab: \(tab)")
+        
+        let items: [ClipboardItem]
+        switch tab {
+        case .all:
+            items = clipboardManager.clipboardItems
+            print("📋 All items count: \(items.count)")
+        case .favorites:
+            items = clipboardManager.favoriteItems
+            print("⭐️ Favorite items count: \(items.count)")
+        case .custom(let group):
+            items = clipboardManager.itemsInGroup(group)
+            print("📁 Group '\(group.name)' items count: \(items.count)")
+            print("📁 Group '\(group.name)' itemIds: \(group.itemIds)")
+        }
+        
+        // If no items in the tab, do nothing
+        guard !items.isEmpty else {
+            print("❌ No items in tab, keeping current selection")
+            return
+        }
+        
+        print("🎯 Current selection ID: \(selectedItemId?.uuidString ?? "nil")")
+        
+        // If current selection is not in the tab's items, select the first item
+        if let currentId = selectedItemId, !items.contains(where: { $0.id == currentId }) {
+            selectedItemId = items.first?.id
+            print("🔄 Selection not in tab, updating to: \(items.first?.id.uuidString ?? "nil")")
+        } else if selectedItemId == nil {
+            // If nothing is selected, select the first item
+            selectedItemId = items.first?.id
+            print("🆕 No current selection, setting to: \(items.first?.id.uuidString ?? "nil")")
+        } else {
+            print("✅ Keeping current selection: \(selectedItemId?.uuidString ?? "nil")")
         }
     }
     

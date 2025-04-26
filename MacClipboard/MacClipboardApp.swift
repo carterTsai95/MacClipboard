@@ -96,6 +96,37 @@ struct MacClipboardApp: App {
             .keyboardShortcut("K", modifiers: [.command])
             .disabled(clipboardManager.clipboardItems.isEmpty)
             
+            if !clipboardManager.customGroups.isEmpty {
+                Divider()
+                
+                Menu("Custom Groups") {
+                    ForEach(clipboardManager.customGroups) { group in
+                        Menu(group.name) {
+                            let items = clipboardManager.itemsInGroup(group)
+                            if items.isEmpty {
+                                Text("No items")
+                                    .foregroundColor(.secondary)
+                            } else {
+                                ForEach(items.prefix(5)) { item in
+                                    Button(action: {
+                                        clipboardManager.copyToClipboard(item)
+                                    }) {
+                                        switch item.content {
+                                        case .text(let string):
+                                            Text(string)
+                                                .lineLimit(1)
+                                        case .image:
+                                            Text("Image")
+                                                .lineLimit(1)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
             Divider()
             
             Button("Show Clipboard Manager") {
