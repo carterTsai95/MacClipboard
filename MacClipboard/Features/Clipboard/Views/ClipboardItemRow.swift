@@ -49,6 +49,36 @@ struct ClipboardItemRow: View {
             .padding(.vertical, 4)
             .background(isSelected ? Color.accentColor.opacity(colorScheme == .dark ? 0.3 : 0.2) : Color.clear)
             .cornerRadius(6)
+            .contextMenu {
+                if !clipboardManager.customGroups.isEmpty {
+                    Menu("Add to Group") {
+                        ForEach(clipboardManager.customGroups) { group in
+                            let isInGroup = clipboardManager.isItemInGroup(item, group: group)
+                            Button(action: {
+                                if isInGroup {
+                                    clipboardManager.removeItemFromGroup(item, group: group)
+                                } else {
+                                    clipboardManager.addItemToGroup(item, group: group)
+                                }
+                            }) {
+                                Label(group.name, systemImage: "folder.fill")
+                                if isInGroup {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                    
+                    Divider()
+                }
+                
+                Button(action: {
+                    clipboardManager.toggleFavorite(item)
+                }) {
+                    Label(item.isFavorite ? "Remove from Favorites" : "Add to Favorites", 
+                          systemImage: item.isFavorite ? "star.slash" : "star")
+                }
+            }
             
             // Action buttons outside the selection highlight
             HStack(spacing: 12) {

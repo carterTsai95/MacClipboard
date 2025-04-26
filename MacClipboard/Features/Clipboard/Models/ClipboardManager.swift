@@ -2,6 +2,7 @@ import SwiftUI
 
 class ClipboardManager: ObservableObject {
     @Published private(set) var clipboardItems: [ClipboardItem] = []
+    @Published private(set) var customGroups: [CustomGroup] = []
     private var changeCount: Int
     private let maxItems: Int
     private let pasteboard: PasteboardProtocol
@@ -168,6 +169,56 @@ class ClipboardManager: ObservableObject {
     
     var favoriteItems: [ClipboardItem] {
         clipboardItems.filter { $0.isFavorite }
+    }
+    
+    func createCustomGroup(name: String, completion: ((CustomGroup) -> Void)? = nil) {
+        let newGroup = CustomGroup(name: name)
+        updateQueue.async { [weak self] in
+            DispatchQueue.main.async {
+                self?.customGroups.append(newGroup)
+                completion?(newGroup)
+            }
+        }
+    }
+    
+    func deleteCustomGroup(_ group: CustomGroup) {
+        updateQueue.async { [weak self] in
+            DispatchQueue.main.async {
+                self?.customGroups.removeAll { $0.id == group.id }
+            }
+        }
+    }
+    
+    func addItemToGroup(_ item: ClipboardItem, group: CustomGroup) {
+        updateQueue.async { [weak self] in
+            DispatchQueue.main.async {
+                if let index = self?.customGroups.firstIndex(where: { $0.id == group.id }) {
+                    var updatedGroup = group
+                    updatedGroup.itemIds.insert(item.id)
+                    self?.customGroups[index] = updatedGroup
+                }
+            }
+        }
+    }
+    
+    func removeItemFromGroup(_ item: ClipboardItem, group: CustomGroup) {
+        updateQueue.async { [weak self] in
+            DispatchQueue.main.async {
+                if let index = self?.customGroups.firstIndex(where: { $0.id == group.id }) {
+                    var updatedGroup = group
+                    updatedGroup.itemIds.remove(item.id)
+                    self?.customGroups[index] = updatedGroup
+                }
+            }
+        }
+    }
+    
+    func itemsInGroup(_ group: CustomGroup) -> [ClipboardItem] {
+        clipboardItems.filter { group.itemIds.contains($0.id) }
+    }
+    
+    func isItemInGroup(_ item: ClipboardItem, group: CustomGroup) -> Bool {
+        return group.itemIds.contains(item.id)
     }
     
     deinit {
