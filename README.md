@@ -10,6 +10,8 @@ A powerful clipboard management application for macOS that helps you manage and 
 - ⌨️ Keyboard shortcuts for quick access
 - 🎯 Easy-to-use menu bar interface
 - 🔒 Secure clipboard management
+- 📁 Custom groups for organizing clipboard items
+- ⭐️ Favorites system for quick access to frequently used items
 
 ## Requirements
 
@@ -38,22 +40,29 @@ open MacClipboard.xcodeproj
 
 ```
 MacClipboard/
-├── Sources/
-│   └── MacClipboard/
-│       ├── Models/
-│       │   ├── ClipboardItem.swift
-│       │   └── ClipboardManager.swift
-│       ├── Views/
-│       │   ├── ContentView.swift
-│       │   ├── ImagePreviewView.swift
-│       │   └── MenuBarExtra.swift
-│       ├── Services/
-│       │   └── ClipboardService.swift
-│       └── MacClipboardApp.swift
-└── Tests/
-    └── MacClipboardTests/
-        ├── ClipboardServiceTests.swift
-        └── ClipboardManagerTests.swift
+├── Features/
+│   ├── Clipboard/
+│   │   ├── LandingLobby/
+│   │   │   └── Views/
+│   │   │       ├── List/
+│   │   │       │   ├── ClipboardListView.swift
+│   │   │       │   ├── ClipboardSearchBar.swift
+│   │   │       │   ├── ClipboardGroupTabs.swift
+│   │   │       │   └── ClipboardItemsList.swift
+│   │   │       └── Preview/
+│   │   │           └── ClipboardPreviewView.swift
+│   │   ├── MenuBar/
+│   │   │   └── Views/
+│   │   │       ├── MenuBarContentView.swift
+│   │   │       ├── LatestItemView.swift
+│   │   │       ├── RecentItemsView.swift
+│   │   │       └── CustomGroupsView.swift
+│   │   └── Models/
+│   │       ├── ClipboardItem.swift
+│   │       └── ClipboardManager.swift
+│   └── Services/
+│       └── ClipboardService.swift
+└── MacClipboardApp.swift
 ```
 
 ### Building
