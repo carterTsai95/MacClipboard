@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "83BFE29D-22CF-4D46-83D1-8DD6111D974C",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:MacClipboard.xcodeproj",
+        "identifier" : "ADE2358B2D99BF66009E42DD",
+        "name" : "MacClipboardTests"
+      }
+    }
+  ],
+  "version" : 1
+}
