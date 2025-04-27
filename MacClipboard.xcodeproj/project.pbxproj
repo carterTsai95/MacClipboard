@@ -17,6 +17,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		ADAD4C252DBEBCA800F03C83 /* MacClipboardTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = MacClipboardTests.xctestplan; sourceTree = "<group>"; };
 		ADE235512D99A7E2009E42DD /* MacClipboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacClipboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADE2358C2D99BF66009E42DD /* MacClipboardTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacClipboardTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -55,6 +56,7 @@
 		ADE235482D99A7E2009E42DD = {
 			isa = PBXGroup;
 			children = (
+				ADAD4C252DBEBCA800F03C83 /* MacClipboardTests.xctestplan */,
 				ADE235532D99A7E2009E42DD /* MacClipboard */,
 				ADE2358D2D99BF66009E42DD /* MacClipboardTests */,
 				ADE235522D99A7E2009E42DD /* Products */,

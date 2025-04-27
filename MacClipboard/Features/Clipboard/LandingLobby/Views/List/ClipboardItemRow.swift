@@ -130,4 +130,50 @@ struct ClipboardItemRow: View {
             .padding(.leading, 8)
         }
     }
+}
+
+#Preview {
+    struct PreviewWrapper: View {
+        @StateObject private var clipboardManager = ClipboardManager()
+        @State private var isSelected = false
+        
+        // Create sample items directly for preview
+        private let sampleItem1 = ClipboardItem(content: .text("This is a sample text item for preview"))
+        private let sampleItem2 = ClipboardItem(content: .text("This is another sample text item"))
+        
+        var body: some View {
+            VStack(spacing: 20) {
+                ClipboardItemRow(
+                    item: sampleItem1,
+                    clipboardManager: clipboardManager,
+                    isLatest: true,
+                    isSelected: isSelected,
+                    onCopy: {}
+                )
+                .frame(height: 60)
+                
+                ClipboardItemRow(
+                    item: sampleItem2,
+                    clipboardManager: clipboardManager,
+                    isLatest: false,
+                    isSelected: !isSelected,
+                    onCopy: {}
+                )
+                .frame(height: 60)
+                
+                Toggle("Toggle Selection", isOn: $isSelected)
+                    .padding()
+                
+                Button("Toggle Favorite") {
+                    // Use the public toggleFavorite method instead of addItem
+                    clipboardManager.toggleFavorite(sampleItem1)
+                }
+                .padding()
+            }
+            .frame(width: 500)
+            .padding()
+        }
+    }
+    
+    return PreviewWrapper()
 } 
