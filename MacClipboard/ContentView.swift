@@ -84,6 +84,20 @@ struct ContentView: View {
             copySelectedItem()
             return .handled
         }
+        .onKeyPress(phases: .down) { press in
+            guard press.modifiers == .command else { return .ignored }
+            
+            if let keyChar = press.characters.first,
+               let index = Int(String(keyChar)),
+               index >= 1 && index <= 9 {
+                let groupIndex = index - 1
+                if groupIndex < clipboardManager.customGroups.count {
+                    selectedTab = .custom(clipboardManager.customGroups[groupIndex])
+                    return .handled
+                }
+            }
+            return .ignored
+        }
         .onChange(of: searchText) { _ in
             // When search text changes, update selection to first filtered item if current selection is not in filtered results
             if let currentId = selectedItemId, !filteredItems.contains(where: { $0.id == currentId }) {
