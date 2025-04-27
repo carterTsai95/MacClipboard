@@ -26,24 +26,10 @@ struct MacClipboardApp: App {
             CommandGroup(replacing: .newItem) {}  // Remove the "New" menu item
             
             CommandGroup(after: .appInfo) {
-                Button("Clear History") {
-                    NotificationCenter.default.post(name: NSNotification.Name("ClearHistory"), object: nil)
-                }
-                .keyboardShortcut("K", modifiers: [.command])
-                
-                Divider()
-                
                 Button("Quit MacClipboard") {
                     NSApplication.shared.terminate(nil)
                 }
                 .keyboardShortcut("Q", modifiers: [.command])
-            }
-            
-            CommandGroup(after: .textEditing) {
-                Button("Copy Selected") {
-                    NotificationCenter.default.post(name: NSNotification.Name("CopySelected"), object: nil)
-                }
-                .keyboardShortcut("C", modifiers: [.command])
             }
         }
         
@@ -151,59 +137,7 @@ struct CustomGroupsView: View {
     var body: some View {
         Menu("Custom Groups") {
             ForEach(Array(clipboardManager.customGroups.enumerated()), id: \.element.id) { index, group in
-                Group {
-                    switch index {
-                    case 0:
-                        Menu(group.name) {
-                            groupContent(for: group)
-                        }
-                        .keyboardShortcut("1", modifiers: .command)
-                    case 1:
-                        Menu(group.name) {
-                            groupContent(for: group)
-                        }
-                        .keyboardShortcut("2", modifiers: .command)
-                    case 2:
-                        Menu(group.name) {
-                            groupContent(for: group)
-                        }
-                        .keyboardShortcut("3", modifiers: .command)
-                    case 3:
-                        Menu(group.name) {
-                            groupContent(for: group)
-                        }
-                        .keyboardShortcut("4", modifiers: .command)
-                    case 4:
-                        Menu(group.name) {
-                            groupContent(for: group)
-                        }
-                        .keyboardShortcut("5", modifiers: .command)
-                    case 5:
-                        Menu(group.name) {
-                            groupContent(for: group)
-                        }
-                        .keyboardShortcut("6", modifiers: .command)
-                    case 6:
-                        Menu(group.name) {
-                            groupContent(for: group)
-                        }
-                        .keyboardShortcut("7", modifiers: .command)
-                    case 7:
-                        Menu(group.name) {
-                            groupContent(for: group)
-                        }
-                        .keyboardShortcut("8", modifiers: .command)
-                    case 8:
-                        Menu(group.name) {
-                            groupContent(for: group)
-                        }
-                        .keyboardShortcut("9", modifiers: .command)
-                    default:
-                        Menu(group.name) {
-                            groupContent(for: group)
-                        }
-                    }
-                }
+                Menu(group.name) { groupContent(for: group) }
             }
         }
     }
@@ -221,11 +155,9 @@ struct CustomGroupsView: View {
                 }) {
                     switch item.content {
                     case .text(let string):
-                        Text(string)
-                            .lineLimit(1)
+                        Text(string).lineLimit(1)
                     case .image:
-                        Text("Image")
-                            .lineLimit(1)
+                        Text("Image").lineLimit(1)
                     }
                 }
             }
