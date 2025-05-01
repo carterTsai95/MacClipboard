@@ -70,34 +70,59 @@ private struct DefaultTabsView: View {
 private struct CustomGroupsTabsView: View {
     @ObservedObject var clipboardManager: ClipboardManager
     @Binding var selectedTab: Tab
+    @State private var hoveredGroupId: UUID? = nil
     
     var body: some View {
         HStack {
             ForEach(clipboardManager.customGroups) { group in
-                Button(action: { selectedTab = .custom(group) }) {
-                    Label(group.name, systemImage: "folder.fill")
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(
-                            Group {
-                                if case .custom(let selectedGroup) = selectedTab,
-                                   selectedGroup.id == group.id {
-                                    Color.accentColor
-                                } else {
-                                    Color.clear
+                HStack(spacing: 0) {
+                    Button(action: { selectedTab = .custom(group) }) {
+                        Label(group.name, systemImage: "folder.fill")
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(
+                                Group {
+                                    if case .custom(let selectedGroup) = selectedTab,
+                                       selectedGroup.id == group.id {
+                                        Color.accentColor
+                                    } else {
+                                        Color.clear
+                                    }
                                 }
+                            )
+                            .foregroundColor(
+                                (selectedTab == .custom(group)) ? .white : .primary
+                            )
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    
+                    if hoveredGroupId == group.id {
+                        Button(action: {
+                            clipboardManager.deleteCustomGroup(group)
+                            if case .custom(let selectedGroup) = selectedTab,
+                               selectedGroup.id == group.id {
+                                selectedTab = .all
                             }
-                        )
-                        .foregroundColor(
-                            (selectedTab == .custom(group)) ? .white : .primary
-                        )
-                        .contentShape(Rectangle())
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 4)
+                                .padding(.trailing, 4)
+                        }
+                        .buttonStyle(.plain)
+                        .transition(.scale.combined(with: .opacity))
+                    }
                 }
-                .buttonStyle(.plain)
+                .background(Color.secondary.opacity(0.2))
+                .cornerRadius(6)
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        hoveredGroupId = hovering ? group.id : nil
+                    }
+                }
             }
         }
-        .background(Color.secondary.opacity(0.2))
-        .cornerRadius(6)
     }
 }
 
