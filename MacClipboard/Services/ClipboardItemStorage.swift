@@ -1,12 +1,12 @@
 import Foundation
 
 class ClipboardItemStorage {
-    static let shared = ClipboardItemStorage()
+    static var shared = ClipboardItemStorage()
     
     private let fileManager = FileManager.default
     private let storageURL: URL
     
-    private init() {
+    public init() {
         // Get the application support directory
         let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let appDirectory = appSupportURL.appendingPathComponent("MacClipboard")

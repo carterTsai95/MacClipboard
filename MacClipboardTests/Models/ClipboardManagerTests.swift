@@ -1,6 +1,23 @@
 import XCTest
 @testable import MacClipboard
 
+// Mock storage for testing
+class MockClipboardItemStorage: ClipboardItemStorage {
+    private var items: [ClipboardItem] = []
+    
+    override init() {
+        super.init()
+    }
+    
+    override func saveItems(_ items: [ClipboardItem]) {
+        self.items = items
+    }
+    
+    override func loadItems() -> [ClipboardItem] {
+        return items
+    }
+}
+
 // Test-specific subclass of ClipboardManager
 class TestableClipboardManager: ClipboardManager {
     func forceCheckForChanges(completion: (() -> Void)? = nil) {
@@ -12,11 +29,15 @@ final class ClipboardManagerTests: XCTestCase {
     // MARK: - Properties
     private var clipboardManager: TestableClipboardManager!
     private var mockPasteboard: MockPasteboard!
+    private var mockStorage: MockClipboardItemStorage!
     
     // MARK: - Lifecycle
     override func setUp() {
         super.setUp()
         mockPasteboard = MockPasteboard()
+        mockStorage = MockClipboardItemStorage()
+        // Replace the shared storage with our mock
+        ClipboardItemStorage.shared = mockStorage
         clipboardManager = TestableClipboardManager(maxItems: 5, 
                                                  pasteboard: mockPasteboard,
                                                  monitoringInterval: 0.1) // Faster monitoring for tests
@@ -25,6 +46,9 @@ final class ClipboardManagerTests: XCTestCase {
     override func tearDown() {
         mockPasteboard = nil
         clipboardManager = nil
+        mockStorage = nil
+        // Restore the original shared storage
+        ClipboardItemStorage.shared = ClipboardItemStorage()
         super.tearDown()
     }
     
