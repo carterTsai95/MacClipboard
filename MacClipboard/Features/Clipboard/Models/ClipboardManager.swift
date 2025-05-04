@@ -140,19 +140,31 @@ class ClipboardManager: ObservableObject {
     }
     
     func clearHistory(completion: (() -> Void)? = nil) {
-        // Keep only the most recent item
+        // Keep the most recent item and any items that are in custom groups or marked as favorites
         if clipboardItems.count > 1 {
             updateQueue.async { [weak self] in
-                self?.removeAllExceptFirst(completion: completion)
+                self?.removeNonProtectedItems(completion: completion)
             }
         } else {
             completion?()
         }
     }
     
-    private func removeAllExceptFirst(completion: (() -> Void)? = nil) {
+    private func removeNonProtectedItems(completion: (() -> Void)? = nil) {
         var newItems = clipboardItems
-        newItems.removeSubrange(1..<newItems.count)
+        
+        // Keep the most recent item
+        let firstItem = newItems.removeFirst()
+        
+        // Filter out items that are not in any custom group and not marked as favorite
+        let protectedItems = newItems.filter { item in
+            item.isFavorite || customGroups.contains { group in
+                group.itemIds.contains(item.id)
+            }
+        }
+        
+        // Reconstruct the items array with the first item and protected items
+        newItems = [firstItem] + protectedItems
         
         DispatchQueue.main.async { [weak self] in
             self?.clipboardItems = newItems

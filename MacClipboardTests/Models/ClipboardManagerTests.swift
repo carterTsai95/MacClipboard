@@ -173,11 +173,32 @@ final class ClipboardManagerTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Wait for items to be added and cleared")
         
         func addItems(index: Int) {
-            guard index < 3 else {
-                // All items added, now test clearing
-                self.clipboardManager.clearHistory {
-                    XCTAssertEqual(self.clipboardManager.clipboardItems.count, 1)
-                    expectation.fulfill()
+            guard index < 5 else {
+                // All items added, now mark some as favorites and add to groups
+                let items = self.clipboardManager.clipboardItems
+                
+                // Mark second item as favorite
+                self.clipboardManager.toggleFavorite(items[1])
+                
+                // Create a custom group and add third item to it
+                self.clipboardManager.createCustomGroup(name: "Test Group") { group in
+                    self.clipboardManager.addItemToGroup(items[2], group: group)
+                    
+                    // Now test clearing
+                    self.clipboardManager.clearHistory {
+                        // Should keep:
+                        // 1. First item (most recent)
+                        // 2. Second item (favorite)
+                        // 3. Third item (in custom group)
+                        XCTAssertEqual(self.clipboardManager.clipboardItems.count, 3)
+                        
+                        // Verify the items are in the correct order
+                        XCTAssertEqual(self.clipboardManager.clipboardItems[0].id, items[0].id)
+                        XCTAssertEqual(self.clipboardManager.clipboardItems[1].id, items[1].id)
+                        XCTAssertEqual(self.clipboardManager.clipboardItems[2].id, items[2].id)
+                        
+                        expectation.fulfill()
+                    }
                 }
                 return
             }
@@ -195,6 +216,6 @@ final class ClipboardManagerTests: XCTestCase {
         // Start adding items
         addItems(index: 0)
         
-        wait(for: [expectation], timeout: 3.0)
+        wait(for: [expectation], timeout: 5.0)
     }
 } 
