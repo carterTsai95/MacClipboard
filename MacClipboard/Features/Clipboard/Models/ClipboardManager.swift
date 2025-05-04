@@ -1,8 +1,18 @@
 import SwiftUI
 
 class ClipboardManager: ObservableObject {
-    @Published private(set) var clipboardItems: [ClipboardItem] = []
-    @Published private(set) var customGroups: [CustomGroup] = []
+    @Published private(set) var clipboardItems: [ClipboardItem] = [] {
+        didSet {
+            // Save items whenever they change
+            ClipboardItemStorage.shared.saveItems(clipboardItems)
+        }
+    }
+    @Published private(set) var customGroups: [CustomGroup] = [] {
+        didSet {
+            // Save groups whenever they change
+            CustomGroupStorage.shared.saveGroups(customGroups)
+        }
+    }
     private var changeCount: Int
     private let maxItems: Int
     private let pasteboard: PasteboardProtocol
@@ -19,6 +29,11 @@ class ClipboardManager: ObservableObject {
         self.changeCount = pasteboard.changeCount
         self.clipboardService = ClipboardService(pasteboard: pasteboard)
         self.monitoringInterval = monitoringInterval
+        
+        // Load saved clipboard items and custom groups
+        self.clipboardItems = ClipboardItemStorage.shared.loadItems()
+        self.customGroups = CustomGroupStorage.shared.loadGroups()
+        
         startMonitoring()
     }
     
