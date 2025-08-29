@@ -39,7 +39,7 @@ struct ContentView: View {
                                 onCopy: showCopyFeedback)
                     .frame(minWidth: 400, minHeight: 400)
                     .navigationTitle("Clipboard History")
-                    .onChange(of: selectedTab) { newTab in
+                    .onChange(of: selectedTab) { newTab, _ in
                         updateSelectionForTab(newTab)
                     }
                     .toolbar {
@@ -182,3 +182,4 @@ struct ContentView: View {
     ContentView()
         .environmentObject(ClipboardManager())
 }
+
