@@ -50,7 +50,7 @@ private struct DefaultTabsView: View {
                     .foregroundColor(selectedTab == .all ? .white : .primary)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(FixedHeightButtonStyle())
             
             Button(action: { selectedTab = .favorites }) {
                 Label("Favorites", systemImage: "star.fill")
@@ -60,7 +60,7 @@ private struct DefaultTabsView: View {
                     .foregroundColor(selectedTab == .favorites ? .white : .primary)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(FixedHeightButtonStyle())
         }
         .background(Color.secondary.opacity(0.2))
         .cornerRadius(6)
@@ -71,6 +71,7 @@ private struct CustomGroupsTabsView: View {
     @ObservedObject var clipboardManager: ClipboardManager
     @Binding var selectedTab: Tab
     @State private var hoveredGroupId: UUID? = nil
+    @State private var hoveredDeleteButtonId: UUID? = nil
     
     var body: some View {
         HStack {
@@ -95,7 +96,7 @@ private struct CustomGroupsTabsView: View {
                             )
                             .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(FixedHeightButtonStyle())
                     
                     if hoveredGroupId == group.id {
                         Button(action: {
@@ -105,16 +106,26 @@ private struct CustomGroupsTabsView: View {
                                 selectedTab = .all
                             }
                         }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.red)
-                                .padding(.horizontal, 4)
-                                .padding(.trailing, 4)
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill((hoveredDeleteButtonId == group.id) ? Color.red.opacity(0.15) : Color.clear)
+                                    .frame(width: 28, height: 28)
+                                    .animation(.easeInOut(duration: 0.2), value: hoveredDeleteButtonId)
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.red)
+                            }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(FixedHeightButtonStyle())
+                        .onHover { hovering in
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                hoveredDeleteButtonId = hovering ? group.id : nil
+                            }
+                        }
                         .transition(.scale.combined(with: .opacity))
                     }
                 }
                 .background(Color.secondary.opacity(0.2))
+                .frame(height: 28)
                 .cornerRadius(6)
                 .onHover { hovering in
                     withAnimation(.easeInOut(duration: 0.2)) {
@@ -190,6 +201,20 @@ private struct NewGroupSheet: View {
     }
 }
 
+private struct FixedHeightButtonStyle: ButtonStyle {
+    var height: CGFloat = 28
+    var cornerRadius: CGFloat = 6
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(height: height)
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(Color.clear) // You can customize this
+            )
+    }
+}
+
 #Preview {
     struct PreviewWrapper: View {
         @StateObject private var clipboardManager = ClipboardManager()
@@ -218,4 +243,4 @@ private struct NewGroupSheet: View {
     }
     
     return PreviewWrapper()
-} 
+}
