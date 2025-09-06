@@ -32,7 +32,7 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack {
-                ClipboardListView(selectedItemId: $selectedItemId, 
+                ClipboardListView(selectedItemId: $selectedItemId,
                                 isSearchFocused: $isSearchFocused,
                                 searchText: $searchText,
                                 selectedTab: $selectedTab,
@@ -61,6 +61,18 @@ struct ContentView: View {
                         }
                     }
             }
+            .onKeyPress(.upArrow) {
+                moveSelection(up: true)
+                return .handled
+            }
+            .onKeyPress(.downArrow) {
+                moveSelection(up: false)
+                return .handled
+            }
+            .onKeyPress(.return) {
+                copySelectedItem()
+                return .handled
+            }
             
             if showCopyToast {
                 ToastView(message: "Copied to clipboard!")
@@ -72,37 +84,30 @@ struct ContentView: View {
                 selectedItemId = firstItem.id
             }
         }
-        .onKeyPress(.upArrow) {
-            moveSelection(up: true)
-            return .handled
-        }
-        .onKeyPress(.downArrow) {
-            moveSelection(up: false)
-            return .handled
-        }
-        .onKeyPress(.return) {
-            copySelectedItem()
-            return .handled
-        }
-        .onKeyPress(phases: .down) { press in
-            guard press.modifiers == .command else { return .ignored }
-            
-            if let keyChar = press.characters.first,
-               let index = Int(String(keyChar)),
-               index >= 1 && index <= 9 {
-                let groupIndex = index - 1
-                if groupIndex < clipboardManager.customGroups.count {
-                    selectedTab = .custom(clipboardManager.customGroups[groupIndex])
-                    return .handled
-                }
-            }
-            return .ignored
-        }
         .onChange(of: searchText) { _ in
             // When search text changes, update selection to first filtered item if current selection is not in filtered results
             if let currentId = selectedItemId, !filteredItems.contains(where: { $0.id == currentId }) {
                 selectedItemId = filteredItems.first?.id
             }
+        }
+        .onKeyPress(phases: .down) { press in
+            guard press.modifiers == .command else { return .ignored }
+            if let keyChar = press.characters.first {
+                let keyString = String(keyChar)
+                let groupIndex: Int?
+                if let intVal = Int(keyString), intVal >= 1 && intVal <= 9 {
+                    groupIndex = intVal - 1
+                } else if keyString == "0" {
+                    groupIndex = 9
+                } else {
+                    groupIndex = nil
+                }
+                if let groupIndex, groupIndex < clipboardManager.customGroups.count {
+                    selectedTab = .custom(clipboardManager.customGroups[groupIndex])
+                    return .handled
+                }
+            }
+            return .ignored
         }
     }
     
@@ -115,8 +120,8 @@ struct ContentView: View {
         guard !navigableItems.isEmpty else { return }
         
         if let currentIndex = navigableItems.firstIndex(where: { $0.id == selectedItemId }) {
-            let newIndex = up ? 
-                (currentIndex - 1 + navigableItems.count) % navigableItems.count : 
+            let newIndex = up ?
+                (currentIndex - 1 + navigableItems.count) % navigableItems.count :
                 (currentIndex + 1) % navigableItems.count
             selectedItemId = navigableItems[newIndex].id
         } else {
@@ -182,4 +187,3 @@ struct ContentView: View {
     ContentView()
         .environmentObject(ClipboardManager())
 }
-
