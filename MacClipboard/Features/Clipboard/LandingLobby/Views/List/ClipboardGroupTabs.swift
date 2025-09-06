@@ -50,7 +50,7 @@ private struct DefaultTabsView: View {
                     .foregroundColor(selectedTab == .all ? .white : .primary)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(FixedHeightButtonStyle())
             
             Button(action: { selectedTab = .favorites }) {
                 Label("Favorites", systemImage: "star.fill")
@@ -60,7 +60,7 @@ private struct DefaultTabsView: View {
                     .foregroundColor(selectedTab == .favorites ? .white : .primary)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(FixedHeightButtonStyle())
         }
         .background(Color.secondary.opacity(0.2))
         .cornerRadius(6)
@@ -71,31 +71,48 @@ private struct CustomGroupsTabsView: View {
     @ObservedObject var clipboardManager: ClipboardManager
     @Binding var selectedTab: Tab
     @State private var hoveredGroupId: UUID? = nil
+    @State private var hoveredDeleteButtonId: UUID? = nil
     
     var body: some View {
         HStack {
-            ForEach(clipboardManager.customGroups) { group in
+            // Use enumerated to get index for keyboard shortcuts
+            ForEach(Array(clipboardManager.customGroups.enumerated()), id: \.element.id) { index, group in
                 HStack(spacing: 0) {
                     Button(action: { selectedTab = .custom(group) }) {
-                        Label(group.name, systemImage: "folder.fill")
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 5)
-                            .background(
-                                Group {
-                                    if case .custom(let selectedGroup) = selectedTab,
-                                       selectedGroup.id == group.id {
-                                        Color.accentColor
-                                    } else {
-                                        Color.clear
-                                    }
+                        HStack(spacing: 4) {
+                            Image(systemName: "folder.fill")
+                            Text(group.name)
+                            if index < 10 {
+                                Text("\u{2318}\(index < 9 ? String(index + 1) : "0")")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.leading, 2)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(
+                            Group {
+                                if case .custom(let selectedGroup) = selectedTab,
+                                   selectedGroup.id == group.id {
+                                    Color.accentColor
+                                } else {
+                                    Color.clear
                                 }
-                            )
-                            .foregroundColor(
-                                (selectedTab == .custom(group)) ? .white : .primary
-                            )
-                            .contentShape(Rectangle())
+                            }
+                        )
+                        .foregroundColor(
+                            (selectedTab == .custom(group)) ? .white : .primary
+                        )
+                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(FixedHeightButtonStyle())
+                    // Assign keyboard shortcuts for the first 10 groups:
+                    // ⌘1 through ⌘9 for indexes 0-8, and ⌘0 for index 9
+                    .keyboardShortcut(
+                        index < 9 ? KeyEquivalent(Character(UnicodeScalar("1".unicodeScalars.first!.value + UInt32(index))!)) : KeyEquivalent("0"),
+                        modifiers: [.command]
+                    )
                     
                     if hoveredGroupId == group.id {
                         Button(action: {
@@ -105,16 +122,26 @@ private struct CustomGroupsTabsView: View {
                                 selectedTab = .all
                             }
                         }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.red)
-                                .padding(.horizontal, 4)
-                                .padding(.trailing, 4)
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill((hoveredDeleteButtonId == group.id) ? Color.red.opacity(0.15) : Color.clear)
+                                    .frame(width: 28, height: 28)
+                                    .animation(.easeInOut(duration: 0.2), value: hoveredDeleteButtonId)
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.red)
+                            }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(FixedHeightButtonStyle())
+                        .onHover { hovering in
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                hoveredDeleteButtonId = hovering ? group.id : nil
+                            }
+                        }
                         .transition(.scale.combined(with: .opacity))
                     }
                 }
                 .background(Color.secondary.opacity(0.2))
+                .frame(height: 28)
                 .cornerRadius(6)
                 .onHover { hovering in
                     withAnimation(.easeInOut(duration: 0.2)) {
@@ -190,6 +217,20 @@ private struct NewGroupSheet: View {
     }
 }
 
+private struct FixedHeightButtonStyle: ButtonStyle {
+    var height: CGFloat = 28
+    var cornerRadius: CGFloat = 6
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(height: height)
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(Color.clear) // You can customize this
+            )
+    }
+}
+
 #Preview {
     struct PreviewWrapper: View {
         @StateObject private var clipboardManager = ClipboardManager()
@@ -218,4 +259,5 @@ private struct NewGroupSheet: View {
     }
     
     return PreviewWrapper()
-} 
+}
+
