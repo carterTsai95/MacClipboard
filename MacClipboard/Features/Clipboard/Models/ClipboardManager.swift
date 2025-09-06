@@ -74,7 +74,8 @@ class ClipboardManager: ObservableObject {
             }
         }
         
-        let newItem = ClipboardItem(content: content)
+        let tags = ClipboardItemTagger.tags(for: content)
+        let newItem = ClipboardItem(content: content, tag: tags)
         updateQueue.async { [weak self] in
             self?.updateItems(with: newItem, completion: completion)
         }
