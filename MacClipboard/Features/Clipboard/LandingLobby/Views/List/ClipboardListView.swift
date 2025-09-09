@@ -9,12 +9,23 @@ struct ClipboardListView: View {
     let onCopy: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     
+    @State private var selectedTag: String? = nil
+    
     init(selectedItemId: Binding<UUID?>, isSearchFocused: FocusState<Bool>.Binding, searchText: Binding<String>, selectedTab: Binding<Tab>, onCopy: @escaping () -> Void) {
         self._selectedItemId = selectedItemId
         self._isSearchFocused = isSearchFocused
         self._searchText = searchText
         self._selectedTab = selectedTab
         self.onCopy = onCopy
+    }
+    
+    private func color(for tag: String) -> Color {
+        let colors: [Color] = [
+            .red, .orange, .yellow, .green, .mint, .teal, .cyan, .blue, .indigo, .purple, .pink, .brown, .gray
+        ]
+        let hash = tag.unicodeScalars.reduce(0, { $0 + UInt32($1.value) })
+        let colorIndex = Int(hash) % colors.count
+        return colors[colorIndex].opacity(0.3)
     }
     
     var filteredItems: [ClipboardItem] {
@@ -28,17 +39,40 @@ struct ClipboardListView: View {
             items = clipboardManager.itemsInGroup(group)
         }
         
-        if searchText.isEmpty {
-            return items
-        }
-        return items.filter { item in
-            switch item.content {
-            case .text(let string):
-                return string.localizedCaseInsensitiveContains(searchText)
-            case .image:
-                return false // Images are not searchable
+        var result = items
+        
+        if !searchText.isEmpty {
+            result = result.filter { item in
+                switch item.content {
+                case .text(let string):
+                    return string.localizedCaseInsensitiveContains(searchText)
+                case .image:
+                    return false // Images are not searchable
+                }
             }
         }
+        
+        if let tag = selectedTag {
+            result = result.filter { $0.tag.contains(tag) }
+        }
+        
+        return result
+    }
+    
+    private var allTags: [String] {
+        // Collect unique tags from items visible after tab filter (before search & tag filter)
+        let items: [ClipboardItem]
+        switch selectedTab {
+        case .all:
+            items = clipboardManager.clipboardItems
+        case .favorites:
+            items = clipboardManager.favoriteItems
+        case .custom(let group):
+            items = clipboardManager.itemsInGroup(group)
+        }
+        
+        let tags = Set(items.flatMap { $0.tag })
+        return tags.sorted()
     }
     
     var body: some View {
@@ -46,6 +80,31 @@ struct ClipboardListView: View {
             ClipboardSearchBar(searchText: $searchText, isSearchFocused: $isSearchFocused)
             
             ClipboardGroupTabs(clipboardManager: clipboardManager, selectedTab: $selectedTab)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    Button(action: { selectedTag = nil }) {
+                        Text("All")
+                            .font(.caption)
+                            .fontWeight(selectedTag == nil ? .bold : .regular)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(selectedTag == nil ? Color.accentColor : Color.secondary.opacity(0.2))
+                            .foregroundColor(selectedTag == nil ? .white : .primary)
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    ForEach(allTags, id: \.self) { tag in
+                        Button(action: { selectedTag = tag }) {
+                            Text(tag)
+                                .modifier(TagStyleModifier(color: color(for: tag)))
+                                .fontWeight(selectedTag == tag ? .bold : .regular)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal)
+            }
             
             ClipboardItemsList(
                 clipboardManager: clipboardManager,
@@ -110,7 +169,11 @@ struct ClipboardListView: View {
         
         // Create sample items directly for preview
         private let sampleItems: [ClipboardItem] = [
-            ClipboardItem(content: .text("Sample text 1"))
+            ClipboardItem(content: .text("Sample text 1"), tag: ["Work"]),
+            ClipboardItem(content: .text("Sample text 2"), tag: ["Personal"]),
+            ClipboardItem(content: .text("Sample text 3"), tag: ["Work"]),
+            ClipboardItem(content: .text("Sample text 4"), tag: ["Ideas"]),
+            ClipboardItem(content: .text("Sample text 5"), tag: [])
         ]
         
         var body: some View {
@@ -138,3 +201,4 @@ struct ClipboardListView: View {
     
     return PreviewWrapper()
 } 
+
