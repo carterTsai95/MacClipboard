@@ -9,7 +9,7 @@ struct ClipboardListView: View {
     let onCopy: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     
-    @State private var selectedTag: String? = nil
+    @State private var selectedTags: Set<String> = []
     
     init(selectedItemId: Binding<UUID?>, isSearchFocused: FocusState<Bool>.Binding, searchText: Binding<String>, selectedTab: Binding<Tab>, onCopy: @escaping () -> Void) {
         self._selectedItemId = selectedItemId
@@ -52,8 +52,10 @@ struct ClipboardListView: View {
             }
         }
         
-        if let tag = selectedTag {
-            result = result.filter { $0.tag.contains(tag) }
+        if !selectedTags.isEmpty {
+            result = result.filter { item in
+                !selectedTags.intersection(item.tag).isEmpty
+            }
         }
         
         return result
@@ -81,30 +83,11 @@ struct ClipboardListView: View {
             
             ClipboardGroupTabs(clipboardManager: clipboardManager, selectedTab: $selectedTab)
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    Button(action: { selectedTag = nil }) {
-                        Text("All")
-                            .font(.caption)
-                            .fontWeight(selectedTag == nil ? .bold : .regular)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(selectedTag == nil ? Color.accentColor : Color.secondary.opacity(0.2))
-                            .foregroundColor(selectedTag == nil ? .white : .primary)
-                            .cornerRadius(6)
-                    }
-                    .buttonStyle(.plain)
-                    ForEach(allTags, id: \.self) { tag in
-                        Button(action: { selectedTag = tag }) {
-                            Text(tag)
-                                .modifier(TagStyleModifier(color: color(for: tag)))
-                                .fontWeight(selectedTag == tag ? .bold : .regular)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal)
-            }
+            TagFilterBar(
+                allTags: allTags,
+                selectedTags: $selectedTags,
+                colorForTag: color(for:)
+            )
             
             ClipboardItemsList(
                 clipboardManager: clipboardManager,
@@ -159,6 +142,8 @@ struct ClipboardListView: View {
     }
 }
 
+
+
 #Preview {
     struct PreviewWrapper: View {
         @StateObject private var clipboardManager = ClipboardManager()
@@ -166,6 +151,7 @@ struct ClipboardListView: View {
         @FocusState private var isSearchFocused: Bool
         @State private var searchText = ""
         @State private var selectedTab: Tab = .all
+        @State private var selectedTags: Set<String> = []
         
         // Create sample items directly for preview
         private let sampleItems: [ClipboardItem] = [
@@ -177,15 +163,17 @@ struct ClipboardListView: View {
         ]
         
         var body: some View {
-            ClipboardListView(
-                selectedItemId: $selectedItemId,
-                isSearchFocused: $isSearchFocused,
-                searchText: $searchText,
-                selectedTab: $selectedTab,
-                onCopy: {}
-            )
-            .environmentObject(clipboardManager)
-            .frame(width: 600, height: 600)
+            VStack {
+                ClipboardListView(
+                    selectedItemId: $selectedItemId,
+                    isSearchFocused: $isSearchFocused,
+                    searchText: $searchText,
+                    selectedTab: $selectedTab,
+                    onCopy: {}
+                )
+                .environmentObject(clipboardManager)
+                .frame(width: 600, height: 600)
+            }
             .task {
                 // Use public methods to add items
                 for item in sampleItems {
@@ -200,5 +188,4 @@ struct ClipboardListView: View {
     }
     
     return PreviewWrapper()
-} 
-
+}
