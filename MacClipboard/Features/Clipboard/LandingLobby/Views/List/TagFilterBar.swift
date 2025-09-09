@@ -34,8 +34,22 @@ struct TagFilterBar: View {
                         }
                     }) {
                         Text(tag)
-                            .modifier(TagStyleModifier(color: colorForTag(tag)))
+                            .font(.caption)
                             .fontWeight(selectedTags.contains(tag) ? .bold : .regular)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                selectedTags.contains(tag)
+                                    ? colorForTag(tag)
+                                    : Color.secondary.opacity(0.15)
+                            )
+                            .foregroundColor(selectedTags.contains(tag) ? .white : .primary)
+                            .cornerRadius(6)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(selectedTags.contains(tag) ? colorForTag(tag) : Color.clear, lineWidth: 1.5)
+                            )
+                            .shadow(color: selectedTags.contains(tag) ? colorForTag(tag).opacity(0.3) : .clear, radius: selectedTags.contains(tag) ? 3 : 0)
                     }
                     .buttonStyle(.plain)
                 }
